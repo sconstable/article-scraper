@@ -4,10 +4,11 @@ import argparse
 import os
 
 
-class MyHTMLParser(HTMLParser):
-    def __init__(self):
+class Reader(HTMLParser):
+    def __init__(self, file_handle=None):
         super().__init__()
         self.print_me = False
+        self.file_handle = file_handle
 
     def handle_starttag(self, tag, attrs):
         if tag == "p":
@@ -16,28 +17,35 @@ class MyHTMLParser(HTMLParser):
     def handle_endtag(self, tag):
         if tag == "p":
             self.print_me = False
-            if not file_name:
-                print("")
+            if self.file_handle:
+                self.file_handle.write(os.linesep)
             else:
-                file_handle.write(os.linesep)
+                print("")
 
     def handle_data(self, data):
         if self.print_me:
-            if not file_name:
-                print(data)
+            if self.file_handle:
+                self.file_handle.write(data)
+                self.file_handle.write(os.linesep)
             else:
-                file_handle.write(data)
-                file_handle.write(os.linesep)
+                print(data)
 
 
-htmlparser = MyHTMLParser()
-argparser = argparse.ArgumentParser()
-argparser.add_argument("url", type=str)
-argparser.add_argument("--output", dest='output', type=str, help="filename to write to")
-args = argparser.parse_args()
-file_name = None
+def main():
+    parser = argparse.ArgumentParser(description="Provide news article and file path if you desire to save it.")
+    parser.add_argument("url", type=str, help="URL of article to read.")
+    parser.add_argument("--output", dest='output', type=str, help="filename to write to.")
 
-if args.output:
-    file_name = args.output
-    file_handle = open(file_name, 'w')
-htmlparser.feed(requests.get(args.url).text)
+    args = parser.parse_args()
+
+    file_handle = None
+    if args.output:
+        file_name = args.output
+        file_handle = open(file_name, 'w')
+
+    htmlparser = Reader(file_handle)
+    htmlparser.feed(requests.get(args.url).text)
+
+
+if __name__ == "__main__":
+    main()
