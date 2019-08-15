@@ -1,4 +1,7 @@
-from html.parser import HTMLParser
+try:
+    from html.parser import HTMLParser
+except ImportError:
+    from HTMLParser import HTMLParser
 import requests
 import argparse
 import os
@@ -6,9 +9,15 @@ import os
 
 class Reader(HTMLParser):
     def __init__(self, file_handle=None):
-        super().__init__()
+        HTMLParser.__init__(self)
         self.print_me = False
         self.file_handle = file_handle
+
+    def write(self, data):
+        try:
+            self.file_handle.write(data)
+        except UnicodeEncodeError:
+            self.file_handle.write(data.encode('utf-8').decode("ascii", 'ignore'))
 
     def handle_starttag(self, tag, attrs):
         if tag == "p":
@@ -18,15 +27,15 @@ class Reader(HTMLParser):
         if tag == "p":
             self.print_me = False
             if self.file_handle:
-                self.file_handle.write(os.linesep)
+                self.write(os.linesep)
             else:
                 print("")
 
     def handle_data(self, data):
         if self.print_me:
             if self.file_handle:
-                self.file_handle.write(data)
-                self.file_handle.write(os.linesep)
+                self.write(data)
+                self.write(os.linesep)
             else:
                 print(data)
 
